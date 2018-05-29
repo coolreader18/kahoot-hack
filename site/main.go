@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -12,6 +14,9 @@ import (
 )
 
 var usageSemaphore = make(chan struct{}, 10)
+
+var _, _assetsDir, _, _ = runtime.Caller(0)
+var assetsDir = path.Dir(assetsDir) + "/assets/"
 
 func main() {
 	if len(os.Args) != 2 {
@@ -26,12 +31,11 @@ func main() {
 
 	http.HandleFunc("/hack", handleHack)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		path := strings.Replace(r.URL.Path, "/", "", -1)
+		path := r.URL.Path
 		if path == "" {
-			http.ServeFile(w, r, "assets/index.html")
-		} else {
-			http.ServeFile(w, r, "assets/"+path)
+			path = "index.html"
 		}
+		http.ServeFile(w, r, assetsDir+path)
 	})
 
 	http.ListenAndServe(":"+os.Args[1], nil)
@@ -44,7 +48,7 @@ func handleHack(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if r.ParseForm() != nil {
-		http.ServeFile(w, r, "assets/invalid_form.html")
+		http.ServeFile(w, r, assetsDir+"invalid_form.html")
 		return
 	}
 
@@ -58,14 +62,14 @@ func handleHack(w http.ResponseWriter, r *http.Request) {
 	} else if hackType == "HTML Hack" {
 		res = htmlHack(gamePin, nickname)
 	} else {
-		http.ServeFile(w, r, "assets/invalid_form.html")
+		http.ServeFile(w, r, assetsDir+"invalid_form.html")
 		return
 	}
 
 	if res {
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 	} else {
-		http.ServeFile(w, r, "assets/unknown_game.html")
+		http.ServeFile(w, r, assetsDir+"unknown_game.html")
 	}
 }
 
